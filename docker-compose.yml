@@ -1,38 +1,54 @@
 version: '3'
 services:
-  #PHP Service
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    image: digitalocean.com/php
+    image: holoo/php
     container_name: app
     restart: unless-stopped
     tty: true
     environment:
       SERVICE_NAME: app
       SERVICE_TAGS: dev
-      working_dir: /var/www
+    working_dir: /var/www/Azmoon/backend
     volumes:
       - ..:/var/www
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
       - app-network
-  #Nginx Service
+
   webserver:
     image: nginx:alpine
     container_name: webserver
     restart: unless-stopped
     tty: true
     ports:
-      - "80:80"
-      - "443:443"
+      - "8081:80"
+      - "8082:81"
+      - "8084:82"
     volumes:
       - ../:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
+    depends_on:
+      - app
     networks:
       - app-network
-  #mariadb
+
+  nodeapp:
+    build:
+      context: .
+      dockerfile: DockerNodefile
+    image: node-app
+    container_name: nodeapp
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../Amazon_NodeJs:/usr/src/app
+    networks:
+      - app-network
+
   mariadb:
     image: mariadb:latest
     restart: always
@@ -47,7 +63,7 @@ services:
       - ./data:/var/lib/mysql
     networks:
       - app-network
-  #Nginx phpmyadmin
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     restart: always
@@ -61,11 +77,7 @@ services:
       - mariadb
     networks:
       - app-network
-#Docker Networks
+
 networks:
   app-network:
     driver: bridge
-#Volumes
-volumes:
-  dbdata:
-    driver: local
